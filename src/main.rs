@@ -13,24 +13,29 @@ fn handle_write(mut stream: &TcpStream) -> io::Result<usize>{
 
 fn handle_read(mut  stream: &TcpStream) -> io::Result<usize>{
 	let mut buf  = [0u8, 4096];
-	let ret = match stream.read(& mut buf){
+	match stream.read(& mut buf){
 		Ok(o)=>{
 			let req_str = String::from_utf8_lossy(&buf);
 			println!("{}",req_str);
-                        Ok(o);
+            Ok(o)
 		},
 		Err(e)=> {
 			println!("Unable to read stream: {}",e);
-			Err(e);
+			Err(e)
 		},
-	};
-	ret;
+	}
 }
 fn handle_client(stream: TcpStream){
 	println!("handling tcpstream");
         loop {
-		handle_read(&stream);
-		handle_write(&stream);
+			match handle_read(&stream) {
+				Ok(o) => {
+					handle_write(&stream);
+				},
+				Err(e) => {
+					println!("errr {}",e);
+				}
+           }
 	}
 }
 fn main() {
