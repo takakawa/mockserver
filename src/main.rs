@@ -1,26 +1,24 @@
-use std::net::{TcpListener,TcpStream};
+use std::net::{TcpListener,TcpStream,Shutdown};
 use std::thread;
 use std::io;
 use std::io::{Read,Write};
 
 fn handle_write(mut stream: &TcpStream) -> io::Result<usize>{
-	let resp = b"test,test,test";
-	match stream.write(resp){
-		Ok(o)=>{println!("Sent ok,{}",o);Ok(o)},
-		Err(e)=>{println!("Failed to send:{}",e);Err(e)},
-	}
+        let resp = b"HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n<html><body>Hello world</body></html>\r\n";
+	stream.write(resp)
 }
 
 fn handle_read(mut  stream: &TcpStream) -> io::Result<usize>{
-	let mut buf  = [0u8, 4096];
+	let mut buf  = [0u8; 4096];
 	match stream.read(& mut buf){
 		Ok(o)=>{
 			let req_str = String::from_utf8_lossy(&buf);
 			println!("{}",req_str);
-            Ok(o)
+            		Ok(o)
 		},
 		Err(e)=> {
 			println!("Unable to read stream: {}",e);
+			stream.shutdown(Shutdown::Both);
 			Err(e)
 		},
 	}
@@ -30,10 +28,14 @@ fn handle_client(stream: TcpStream){
         loop {
 			match handle_read(&stream) {
 				Ok(o) => {
-					handle_write(&stream);
+					match handle_write(&stream){
+					   Ok(o)=>{println!("Sent ok,{}",o);},
+					   Err(e)=>{println!("Failed to send:{}",e);stream.shutdown(Shutdown::Both);break;},
+					}
 				},
 				Err(e) => {
 					println!("errr {}",e);
+					break;
 				}
            }
 	}
